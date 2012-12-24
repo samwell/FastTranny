@@ -1,7 +1,6 @@
 *.class
 
 # Package Files #
-*.jar
 *.war
 *.ear
 
@@ -18,3 +17,4 @@ gen/
 # Local configuration file (sdk path, etc)
 local.properties
 *.log
+message.*
