@@ -18,43 +18,66 @@ import javax.crypto.spec.SecretKeySpec;
 
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.util.encoders.Base64;
+import org.json.simple.JSONObject;
+import org.json.simple.JSONValue;
 
 public class TrannyFile {
    private String fileName;
    private byte[] iv;
    private SecretKey secret;
+   private Cipher cipher;
    
-   public TrannyFile() throws NoSuchAlgorithmException {
+   public TrannyFile() throws NoSuchAlgorithmException, NoSuchPaddingException {
       KeyGenerator keyGen = KeyGenerator.getInstance("AES", new BouncyCastleProvider());
       keyGen.init(128);
+      
+      cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
       
       secret = keyGen.generateKey();
    }
    
-   public TrannyFile(String fileName) throws NoSuchAlgorithmException {
+   public TrannyFile(String fileName) throws NoSuchAlgorithmException, NoSuchPaddingException {
       this();
       this.fileName = fileName;
    }
    
+   @SuppressWarnings("unchecked")
+   public String getFileName()
+   {
+      JSONObject json = new JSONObject();
+      json.put("fileName", fileName);
+      
+      return json.toJSONString();
+   }
+   
+   @SuppressWarnings("unchecked")
    public String getSecret() {
-      return new String(Base64.encode(secret.getEncoded()));
+      JSONObject json = new JSONObject();
+      json.put("secret", new String(Base64.encode(secret.getEncoded())));
+      
+      return json.toJSONString();
    }
    
    public void setSecret(String secret) {
-      this.secret = new SecretKeySpec(Base64.decode(secret), "AES");
+      JSONObject json = (JSONObject) JSONValue.parse(secret);
+      this.secret = new SecretKeySpec(Base64.decode((String)json.get("secret")), "AES");
    }
    
+   @SuppressWarnings("unchecked")
    public String getIV() {
-      return new String(Base64.encode(iv));
+      JSONObject json = new JSONObject();
+      json.put("iv", new String(Base64.encode(iv)));
+      
+      return json.toJSONString();
    }
    
    public void setIV(String iv) {
-      this.iv = Base64.decode(iv);
+      JSONObject json = (JSONObject) JSONValue.parse(iv);
+      this.iv = Base64.decode((String)json.get("iv"));
    }
    
    public void encrypt() throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException,
          InvalidParameterSpecException, IOException, IllegalBlockSizeException, BadPaddingException {
-      Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
       cipher.init(Cipher.ENCRYPT_MODE, secret);
       AlgorithmParameters params = cipher.getParameters();
       iv = params.getParameterSpec(IvParameterSpec.class).getIV();
@@ -81,9 +104,8 @@ public class TrannyFile {
       outFile.close();
    }
    
-   public void decrypt() throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException,
-         InvalidAlgorithmParameterException, IllegalBlockSizeException, BadPaddingException, IOException {
-      Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
+   public void decrypt() throws InvalidKeyException, InvalidAlgorithmParameterException, IllegalBlockSizeException,
+         BadPaddingException, IOException {
       cipher.init(Cipher.DECRYPT_MODE, secret, new IvParameterSpec(iv));
       
       FileInputStream inFile = new FileInputStream(fileName + ".aes");
