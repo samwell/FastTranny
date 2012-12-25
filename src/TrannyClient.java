@@ -1,5 +1,4 @@
 import java.io.BufferedReader;
-import java.io.DataInputStream;
 import java.io.FileOutputStream;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
@@ -95,7 +94,7 @@ public class TrannyClient {
          close();
          return;
       }
-
+      
       String newSecret = in.readLine();
       System.out.println("secret: " + newSecret);
       
@@ -104,7 +103,7 @@ public class TrannyClient {
          close();
          return;
       }
-
+      
       String newMD5checksum = in.readLine();
       System.out.println("MD5checksum: " + newMD5checksum);
       
@@ -115,7 +114,7 @@ public class TrannyClient {
       }
       
       sendMessage(App.OK, false);
-
+      
       String newIV = in.readLine();
       System.out.println("IV: " + newIV);
       
@@ -124,33 +123,44 @@ public class TrannyClient {
          close();
          return;
       }
-       
-       System.out.println("CLIENT: getting ready to get file");
-//       DataInputStream fileIn = new DataInputStream(socket.getInputStream());
-       FileOutputStream newFile = new FileOutputStream(fileName + ".aes");
-       
-       String input = in.readLine();
-       
-       System.out.println("CLIENT: input - " + input);
-       
-       while(input != null) {
-          System.out.println("CLIENT: receiving file - " + input);
-          newFile.write(Base64.decode(input));
-          input = in.readLine();
-       }
-       
-       System.out.println("CLIENT: finished receiving file");
-       
-       newFile.close();
-//       fileIn.close();
-       close();
       
-       file.setFileName(newFileName);
-       file.setSecret(newSecret);
-       file.setIV(newIV);
-       
-       System.out.println("CLIENT: decrypting file");
-       file.decrypt();
+      System.out.println("CLIENT: getting ready to get file");
+      FileOutputStream newFile = new FileOutputStream(fileName + ".aes");
+      
+      String input = in.readLine();
+      
+      System.out.println("CLIENT: input - " + input);
+      
+      while (input != null && !input.equals(App.ENDTRANSMISSION)) {
+         System.out.println("CLIENT: receiving file - " + input);
+         newFile.write(Base64.decode(input));
+         input = in.readLine();
+      }
+      
+      newFile.close();
+      
+      if (!input.equals(App.ENDTRANSMISSION)) {
+         System.out.println("CLIENT: error getting file");
+         close();
+         return;
+      }
+      
+      System.out.println("CLIENT: finished receiving file");
+      
+      close();
+      
+      file.setFileName(newFileName);
+      file.setSecret(newSecret);
+      file.setIV(newIV);
+      
+      System.out.println("CLIENT: decrypting file");
+      
+      if(file.decrypt().equals(newMD5checksum))
+         System.out.println("CLIENT: MD5 checksums match");
+      else
+         System.out.println("CLIENT: MD5 checksums do not match");
+      
+      close();
    }
    
    public static void main(String args[]) throws Exception {

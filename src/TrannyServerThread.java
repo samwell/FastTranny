@@ -151,7 +151,7 @@ public class TrannyServerThread extends Thread {
       
       System.out.println("THREAD: finished sending file");
       
-//      sendMessage(App.ENDTRANSMISSION);
+      sendMessage(App.ENDTRANSMISSION);
       
       out.flush();
    }
@@ -160,7 +160,9 @@ public class TrannyServerThread extends Thread {
       System.out.println("THREAD: sending " + msg);
       
       out.writeBytes(msg + App.CRLF);
-      out.writeBytes(App.ENDTRANSMISSION + App.CRLF);
+      
+      if (!msg.equals(App.ENDTRANSMISSION))
+         out.writeBytes(App.ENDTRANSMISSION + App.CRLF);
       
       out.flush();
    }

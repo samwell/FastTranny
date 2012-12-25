@@ -120,9 +120,8 @@ public class TrannyFile {
       
       
       FileInputStream inFile = new FileInputStream(fileName);
-//      FileOutputStream outFile = new FileOutputStream(fileName + ".aes");
       
-      byte[] input = new byte[128];
+      byte[] input = new byte[App.MAX_BUFFER];
       int read;
       String encoded;
       
@@ -148,11 +147,12 @@ public class TrannyFile {
       
       inFile.close();
       out.flush();
-//      outFile.close();
    }
    
-   public void decrypt() throws InvalidKeyException, InvalidAlgorithmParameterException, IllegalBlockSizeException,
-         BadPaddingException, IOException {
+   public String decrypt() throws Exception {
+
+      System.out.println("CRYPT: decrypting file");
+      
       cipher.init(Cipher.DECRYPT_MODE, secret, new IvParameterSpec(iv));
       
       FileInputStream inFile = new FileInputStream(fileName + ".aes");
@@ -176,6 +176,15 @@ public class TrannyFile {
       inFile.close();
       outFile.flush();
       outFile.close();
+      
+      System.out.println("CRYPT: finished decrypting");
+      
+      if(new File(fileName + ".aes").delete())
+         System.out.println("CRYPT: encrypted file was deleted - " + fileName + ".aes");
+      else
+         System.out.println("CRYPT: couldn't delete encrypted file - " + fileName + ".aes");
+      
+      return new MD5Checksum(fileName + ".dcr").getMD5Checksum();
    }
    
    public static void main(String[] args) {

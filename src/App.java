@@ -1,7 +1,7 @@
 public class App
 {
    public static final int PORT = 5589;
-   public static final int MAX_BUFFER = 1024;
+   public static final int MAX_BUFFER = 10240;
    public static final String CRLF = "\r\n";
    public static final String LIST = "LIST";
    public static final String OPENDIR = "OPENDIR";
