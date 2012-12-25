@@ -1,3 +1,5 @@
+import java.io.DataOutputStream;
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -22,9 +24,11 @@ import org.json.simple.JSONObject;
 import org.json.simple.JSONValue;
 
 public class TrannyFile {
+   private DataOutputStream out;
    private String fileName;
-   private byte[] iv;
    private SecretKey secret;
+   private MD5Checksum MD5checksum;
+   private byte[] iv;
    private Cipher cipher;
    
    public TrannyFile() throws NoSuchAlgorithmException, NoSuchPaddingException {
@@ -39,15 +43,36 @@ public class TrannyFile {
    public TrannyFile(String fileName) throws NoSuchAlgorithmException, NoSuchPaddingException {
       this();
       this.fileName = fileName;
+      this.MD5checksum = new MD5Checksum(fileName);
+   }
+   
+   public TrannyFile(String fileName, DataOutputStream out) throws NoSuchAlgorithmException, NoSuchPaddingException {
+      this(fileName);
+      this.out = out;
+   }
+   
+   public String getMD5checksum() {
+      try {
+         return MD5checksum.getMD5Checksum();
+      } catch (Exception e) {
+         e.printStackTrace();
+      }
+      
+      return null;
    }
    
    @SuppressWarnings("unchecked")
    public String getFileName()
    {
       JSONObject json = new JSONObject();
-      json.put("fileName", fileName);
+      json.put("fileName", new File(fileName).getName());
       
       return json.toJSONString();
+   }
+   
+   public void setFileName(String fileName) {
+      JSONObject json = (JSONObject) JSONValue.parse(fileName);
+      this.fileName = (String)json.get("fileName");
    }
    
    @SuppressWarnings("unchecked")
@@ -78,9 +103,19 @@ public class TrannyFile {
    
    public void encrypt() throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException,
          InvalidParameterSpecException, IOException, IllegalBlockSizeException, BadPaddingException {
+      
+      System.out.println("CRYPT: encrypting file");
       cipher.init(Cipher.ENCRYPT_MODE, secret);
       AlgorithmParameters params = cipher.getParameters();
       iv = params.getParameterSpec(IvParameterSpec.class).getIV();
+      
+      System.out.println("CRYPT: created iv");
+      System.out.println("CRYPT: sending iv");
+      System.out.println("CRYPT: sending " + getIV());
+      out.writeBytes(getIV() + App.CRLF);
+      out.writeBytes(App.ENDTRANSMISSION + App.CRLF);
+      System.out.println("CRYPT: sent iv");
+      
       
       FileInputStream inFile = new FileInputStream(fileName);
       FileOutputStream outFile = new FileOutputStream(fileName + ".aes");
@@ -141,6 +176,8 @@ public class TrannyFile {
          
          String secret = crypte.getSecret();
          String iv = crypte.getIV();
+         
+         System.out.println("SECRET: " + secret);
          
          cryptd.setSecret(secret);
          cryptd.setIV(iv);

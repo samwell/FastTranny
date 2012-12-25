@@ -1,9 +1,7 @@
 import java.io.BufferedReader;
-import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
-import java.net.UnknownHostException;
 
 public class TrannyClient {
    private Socket socket;
@@ -31,7 +29,7 @@ public class TrannyClient {
    public void sendMessage(String msg, boolean connect) throws Exception {
       System.out.println("CLIENT: sending " + msg);
       
-      if(connect)
+      if (connect)
          connect();
       
       out.println(msg);
@@ -39,19 +37,84 @@ public class TrannyClient {
       System.out.println("CLIENT: message sent");
    }
    
-   public void receive() throws Exception {
+   public String receive(boolean close) throws Exception {
+      String rcv = "";
       System.out.println("CLIENT: waiting for response");
       
       String line = in.readLine();
-      while(line != null)
-      {
+      while (line != null && !line.equals(App.ENDTRANSMISSION)) {
+         rcv += line + " ";
          System.out.println("CLIENT rsp: " + line);
          line = in.readLine();
       }
       
       System.out.println("CLIENT: done receiving");
       
-      close();
+      if (close)
+         close();
+      
+      return rcv.trim();
+   }
+   
+   public void get(String fileName) throws Exception {
+      sendMessage(fileName, false);
+      
+      System.out.println("CLIENT: about to receive");
+      String rsp = receive(false);
+      System.out.println("CLIENT rsp to get: " + rsp);
+      
+      if (!rsp.equals(App.OK)) {
+         System.out.println("CLIENT: did not get ok");
+         close();
+         return;
+      }
+      
+      sendMessage(App.OK, false);
+      
+      System.out.println("CLIENT: receiving file " + fileName);
+      
+      if (!in.readLine().equals(App.SENDING)) {
+         System.out.println("CLIENT: error in sending header and file");
+         close();
+         return;
+      }
+      
+      System.out.println("CLIENT: getting header");
+      
+      TrannyFile file = new TrannyFile();
+      
+      String newFileName = in.readLine();
+      System.out.println("FileName: " + newFileName);
+      
+      if (!in.readLine().equals(App.ENDTRANSMISSION)) {
+         System.out.println("CLIENT: error getting file name");
+         close();
+         return;
+      }
+
+      String newSecret = in.readLine();
+      System.out.println("secret: " + newSecret);
+      
+      if (!in.readLine().equals(App.ENDTRANSMISSION)) {
+         System.out.println("CLIENT: error getting file name");
+         close();
+         return;
+      }
+
+      String newMD5checksum = in.readLine();
+      System.out.println("MD5checksum: " + newMD5checksum);
+      
+      if (!in.readLine().equals(App.ENDTRANSMISSION)) {
+         System.out.println("CLIENT: error getting MD5checksum");
+         close();
+         return;
+      }
+      
+       file.setFileName(newFileName);
+       file.setSecret(newSecret);
+       
+       System.out.println("fileName: " + file.getFileName());
+       System.out.println("secret: " + file.getSecret());
    }
    
    public static void main(String args[]) throws Exception {
@@ -60,17 +123,20 @@ public class TrannyClient {
       
       String input = reader.readLine();
       
-      while(input != null) {
+      while (input != null) {
          client.sendMessage(input, true);
          
-         if(input.equals(App.OPENDIR))
+         if (input.equals(App.OPENDIR))
             client.sendMessage(reader.readLine(), false);
          else if (input.equals(App.QUIT))
             System.exit(0);
-         else if(input.equals(App.GET))
-            client.sendMessage(reader.readLine(), false);
+         else if (input.equals(App.GET)) {
+            client.get(reader.readLine());
+            input = reader.readLine();
+            continue;
+         }
          
-         client.receive();
+         client.receive(true);
          
          input = reader.readLine();
       }
