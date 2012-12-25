@@ -1,7 +1,11 @@
 import java.io.BufferedReader;
+import java.io.DataInputStream;
+import java.io.FileOutputStream;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
+
+import org.bouncycastle.util.encoders.Base64;
 
 public class TrannyClient {
    private Socket socket;
@@ -110,11 +114,43 @@ public class TrannyClient {
          return;
       }
       
+      sendMessage(App.OK, false);
+
+      String newIV = in.readLine();
+      System.out.println("IV: " + newIV);
+      
+      if (!in.readLine().equals(App.ENDTRANSMISSION)) {
+         System.out.println("CLIENT: error getting IV");
+         close();
+         return;
+      }
+       
+       System.out.println("CLIENT: getting ready to get file");
+//       DataInputStream fileIn = new DataInputStream(socket.getInputStream());
+       FileOutputStream newFile = new FileOutputStream(fileName + ".aes");
+       
+       String input = in.readLine();
+       
+       System.out.println("CLIENT: input - " + input);
+       
+       while(input != null) {
+          System.out.println("CLIENT: receiving file - " + input);
+          newFile.write(Base64.decode(input));
+          input = in.readLine();
+       }
+       
+       System.out.println("CLIENT: finished receiving file");
+       
+       newFile.close();
+//       fileIn.close();
+       close();
+      
        file.setFileName(newFileName);
        file.setSecret(newSecret);
+       file.setIV(newIV);
        
-       System.out.println("fileName: " + file.getFileName());
-       System.out.println("secret: " + file.getSecret());
+       System.out.println("CLIENT: decrypting file");
+       file.decrypt();
    }
    
    public static void main(String args[]) throws Exception {

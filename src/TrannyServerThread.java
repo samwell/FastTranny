@@ -134,6 +134,12 @@ public class TrannyServerThread extends Thread {
       sendMessage(file.getSecret());
       sendMessage(file.getMD5checksum());
       
+      System.out.println("THREAD: waiting for ok");
+      if (!in.readLine().trim().equals(App.OK)) {
+         sendMessage(App.UNKNOWN);
+         return;
+      }
+      
       try {
          file.encrypt();
       } catch (Exception e) {
@@ -142,6 +148,10 @@ public class TrannyServerThread extends Thread {
          e.printStackTrace();
          return;
       }
+      
+      System.out.println("THREAD: finished sending file");
+      
+//      sendMessage(App.ENDTRANSMISSION);
       
       out.flush();
    }

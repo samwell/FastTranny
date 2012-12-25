@@ -105,11 +105,13 @@ public class TrannyFile {
          InvalidParameterSpecException, IOException, IllegalBlockSizeException, BadPaddingException {
       
       System.out.println("CRYPT: encrypting file");
+      
       cipher.init(Cipher.ENCRYPT_MODE, secret);
       AlgorithmParameters params = cipher.getParameters();
-      iv = params.getParameterSpec(IvParameterSpec.class).getIV();
       
       System.out.println("CRYPT: created iv");
+      iv = params.getParameterSpec(IvParameterSpec.class).getIV();
+      
       System.out.println("CRYPT: sending iv");
       System.out.println("CRYPT: sending " + getIV());
       out.writeBytes(getIV() + App.CRLF);
@@ -118,25 +120,35 @@ public class TrannyFile {
       
       
       FileInputStream inFile = new FileInputStream(fileName);
-      FileOutputStream outFile = new FileOutputStream(fileName + ".aes");
+//      FileOutputStream outFile = new FileOutputStream(fileName + ".aes");
       
       byte[] input = new byte[128];
       int read;
+      String encoded;
       
+      System.out.println("CRYPT: encrypting file");
       while ((read = inFile.read(input)) != -1) {
          byte[] output = cipher.update(input, 0, read);
          
-         if (output != null)
-            outFile.write(output);
+         if (output != null) {
+            encoded = new String(Base64.encode(output));
+            System.out.println("CRYPT: sending file - " + encoded);
+            out.writeBytes(encoded + App.CRLF);
+         }
       }
       
       byte[] output = cipher.doFinal();
-      if (output != null)
-         outFile.write(output);
+      if (output != null) {
+         encoded = new String(Base64.encode(output));
+         System.out.println("CRYPT: sending file - " + encoded);
+         out.writeBytes(encoded + App.CRLF);
+      }
+      
+      System.out.println("CRYPT: finished sending file");
       
       inFile.close();
-      outFile.flush();
-      outFile.close();
+      out.flush();
+//      outFile.close();
    }
    
    public void decrypt() throws InvalidKeyException, InvalidAlgorithmParameterException, IllegalBlockSizeException,
